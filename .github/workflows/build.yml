@@ -13,7 +13,7 @@ env:
   KERNEL_REPO: https://github.com/Pzqqt/android_kernel_xiaomi_marble.git
   KERNEL_BRANCH: melt-rebase
   AK3_REPO: https://github.com/osm0sis/AnyKernel3.git
-  KSUNEXT_BRANCH: next
+  KSUNEXT_BRANCH: main # Diperbaiki ke main agar tidak error saat git checkout
   SUSFS_BRANCH: gki-android12-5.10 # Ganti ke gki-android13-5.15 jika kernel Anda menggunakan versi 5.15
 
 jobs:
@@ -105,7 +105,16 @@ jobs:
           cd kernel
 
           echo "--- Mengunduh dan Memasang KernelSU Next ---"
-          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s ${KSUNEXT_BRANCH}
+          # URL dan branch diperbaiki menggunakan 'main'
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/main/kernel/setup.sh" | bash -s ${KSUNEXT_BRANCH}
+
+          echo "--- Menyesuaikan Path KSU-Next untuk SUSFS ---"
+          # Mencegah error "file not found" saat kompilasi SUSFS dengan mengubah nama foldernya
+          if [ -d "KernelSU-Next" ]; then
+            mv KernelSU-Next KernelSU
+            # Sinkronisasi ulang nama folder pada Makefile agar kernel bisa menemukan sourcenya
+            sed -i 's/KernelSU-Next/KernelSU/g' fs/Makefile drivers/Makefile 2>/dev/null || true
+          fi
 
           echo "--- Mengunduh repositori SUSFS ---"
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b ${SUSFS_BRANCH} ../susfs
@@ -114,8 +123,8 @@ jobs:
           cp ../susfs/kernel_patches/fs/* fs/
           cp ../susfs/kernel_patches/include/linux/* include/linux/
 
-          echo "--- Menerapkan Patch ke direktori KernelSU Next ---"
-          cd KernelSU-Next
+          echo "--- Menerapkan Patch ke direktori KernelSU ---"
+          cd KernelSU
           patch -p1 < ../../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch
           cd ..
 
@@ -226,3 +235,4 @@ jobs:
           name: Marble Kernel Ronin KSU-Next+SUSFS ${{ github.run_number }}
           files: ${{ env.ZIP_NAME }}
           generate_release_notes: true
+          
