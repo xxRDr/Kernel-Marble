@@ -67,14 +67,26 @@ jobs:
         run: |
           cd kernel_workspace
           
-          # Memastikan patch disalin ke dalam folder KernelSU-Next
-          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch KernelSU-Next/
+          # Deteksi otomatis nama direktori KSU (KernelSU atau KernelSU-Next)
+          if [ -d "KernelSU-Next" ]; then
+            KSU_DIR="KernelSU-Next"
+          elif [ -d "KernelSU" ]; then
+            KSU_DIR="KernelSU"
+          else
+            echo "❌ Error: Direktori KernelSU tidak ditemukan setelah setup!"
+            exit 1
+          fi
           
-          cd KernelSU-Next
-          # Mengeksekusi patch di dalam direktori KernelSU-Next
-          patch -p1 < 10_enable_susfs_for_ksu.patch || { echo "Gagal melakukan patch pada KernelSU-Next"; exit 1; }
-          echo "✅ Patch KernelSU-Next Berhasil!"
-
+          echo "✅ Direktori KSU terdeteksi di: $KSU_DIR"
+          
+          # Salin patch ke direktori yang ditemukan
+          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch $KSU_DIR/
+          
+          # Masuk ke direktori dan eksekusi patch
+          cd $KSU_DIR
+          patch -p1 < 10_enable_susfs_for_ksu.patch || { echo "❌ Gagal melakukan patch pada $KSU_DIR"; exit 1; }
+          echo "✅ Patch SUSFS di $KSU_DIR Berhasil!"
+          
       - name: 🛠️ Patch SUSFS ke Kernel 5.10
         run: |
           cd kernel_workspace
