@@ -63,39 +63,36 @@ jobs:
           # Mengambil branch gki-android12-5.10 dari GitLab simonpunk
           git clone --depth=1 -b gki-android12-5.10 https://gitlab.com/simonpunk/susfs4ksu.git susfs4ksu
 
+      - name: 📥 Clone KernelSU-Next (Metode Manual)
+        run: |
+          cd kernel_workspace
+          # Kita clone manual langsung ke folder bernama 'KernelSU-Next'
+          git clone --depth=1 -b ${{ github.event.inputs.KSU_NEXT_BRANCH }} https://github.com/rifsxd/KernelSU-Next.git KernelSU-Next
+          
+          # Hook manual ke Kernel (biasanya setup.sh melakukan ini)
+          # Menggabungkan KSU ke dalam Makefile kernel agar ikut ter-build
+          if grep -q "kernelsu" fs/Makefile; then
+            echo "KernelSU sudah ada di fs/Makefile"
+          else
+            echo "obj-y += KernelSU-Next/" >> fs/Makefile
+          fi
+
       - name: 🛠️ Patch SUSFS ke KernelSU-Next
         run: |
           cd kernel_workspace
           
-          echo "🔍 Mencari lokasi asli direktori KernelSU / KernelSU-Next..."
+          # Menyalin patch langsung ke folder yang baru kita clone
+          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch KernelSU-Next/
           
-          # Perintah 'find' ini akan mencari folder (case-insensitive) di root dan di dalam folder 'drivers'
-          KSU_DIR=$(find . -maxdepth 2 -type d \( -iname "KernelSU-Next" -o -iname "KernelSU" -o -iname "kernelsu" \) | head -n 1)
+          cd KernelSU-Next
           
-          # Jika folder benar-benar tidak ada
-          if [ -z "$KSU_DIR" ]; then
-            echo "❌ Error: Direktori KernelSU sama sekali tidak ditemukan setelah setup.sh dijalankan!"
-            echo "📂 Menampilkan isi root direktori kernel untuk dianalisis (Silakan cek log GitHub Actions):"
-            ls -la
-            echo "📂 Menampilkan isi direktori drivers/ (jika ada):"
-            [ -d "drivers" ] && ls -la drivers/
-            exit 1
-          fi
-          
-          # Membersihkan format path (menghapus awalan './' jika ada)
-          KSU_DIR=${KSU_DIR#./}
-          echo "✅ Direktori KSU berhasil ditemukan di: $KSU_DIR"
-          
-          # Menyalin patch ke folder yang berhasil ditemukan
-          cp ../susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch "$KSU_DIR/"
-          
-          # Masuk ke direktori tersebut dan jalankan patch
-          cd "$KSU_DIR"
+          # Menjalankan patch dan menampilkan detail jika gagal
+          echo "Memulai proses patching..."
           patch -p1 < 10_enable_susfs_for_ksu.patch || { 
-            echo "❌ Gagal patch di $KSU_DIR. File mungkin bentrok atau path di dalam patch tidak cocok."; 
+            echo "❌ Gagal! Ini berarti Patch SUSFS tidak cocok dengan kode KernelSU-Next versi ini (Hunk Failed)."; 
             exit 1; 
           }
-          echo "✅ Patch SUSFS di $KSU_DIR Berhasil!"
+          echo "✅ Patch SUSFS di KernelSU-Next Berhasil!"
           
       - name: 🛠️ Patch SUSFS ke Kernel 5.10
         run: |
