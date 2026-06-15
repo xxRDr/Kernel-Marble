@@ -104,7 +104,8 @@ jobs:
           cd kernel
 
           echo "--- Mengunduh dan Memasang KernelSU Next ---"
-          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/main/kernel/setup.sh" | bash -
+          # URL dikembalikan secara permanen ke branch 'next'
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
 
           echo "--- Mengunduh repositori SUSFS ---"
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b ${SUSFS_BRANCH} ../susfs
@@ -115,16 +116,13 @@ jobs:
 
           echo "--- Menerapkan Patch ke direktori KernelSU-Next ---"
           cd KernelSU-Next
-          # Menambahkan parameter -f (force) agar terhindar dari prompt interaktif [y/n]
-          # Menambahkan || true agar action tidak mati jika ada hunk patch yang sedikit berbeda dengan versi terbaru KSU
-          if [ -f "../../susfs/kernel_patches/KernelSU-Next/10_enable_susfs_for_ksu.patch" ]; then
-            patch -p1 -f < ../../susfs/kernel_patches/KernelSU-Next/10_enable_susfs_for_ksu.patch || true
-          else
-            patch -p1 -f < ../../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch || true
-          fi
+          # Menambahkan -f agar auto-patch tanpa nunggu prompt [y/n]
+          patch -p1 -f < ../../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch || true
           cd ..
 
           echo "--- Menerapkan Patch ke Kernel source ---"
+          # Mengubah target folder di dalam isi file patch SUSFS agar sesuai dengan "KernelSU-Next"
+          sed -i 's/KernelSU\//KernelSU-Next\//g' ../susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch || true
           patch -p1 -f < ../susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch || true
 
           echo "--- Mengaktifkan konfigurasi KSU Next dan SUSFS di defconfig ---"
