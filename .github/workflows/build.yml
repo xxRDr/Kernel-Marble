@@ -13,6 +13,7 @@ env:
   KERNEL_REPO: https://github.com/Pzqqt/android_kernel_xiaomi_marble.git
   KERNEL_BRANCH: melt-rebase
   AK3_REPO: https://github.com/osm0sis/AnyKernel3.git
+  RSKSU_VERSION: v4.1.0 # Diubah dari KSU_BRANCH menjadi versi ReSukiSU
   SUSFS_BRANCH: gki-android12-5.10 # Ganti ke gki-android13-5.15 jika kernel Anda menggunakan versi 5.15
 
 jobs:
@@ -99,36 +100,36 @@ jobs:
 
           echo "Using: $DEFCONFIG_NAME"
 
-      - name: Setup KernelSU Next & SUSFS
+      - name: Setup ReSukiSU & SUSFS
         run: |
           cd kernel
 
-          echo "--- Mengunduh dan Memasang KernelSU Next ---"
-          # URL dikembalikan secara permanen ke branch 'next'
-          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
+          echo "--- Mengunduh dan Memasang ReSukiSU ---"
+          curl -ls https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh | bash -s ${RSKSU_VERSION}
 
           echo "--- Mengunduh repositori SUSFS ---"
-          git clone https://gitlab.com/simonpunk/susfs4ksu.git -b ${SUSFS_BRANCH} ../susfs
+          # Ditambahkan --depth=1 agar proses clone cepat dan tidak ditolak oleh GitLab (mencegah error sebelumnya)
+          git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b ${SUSFS_BRANCH} ../susfs
 
           echo "--- Menyalin file susfs ---"
+          # Menggunakan wildcard (*) agar tidak error jika ada file spesifik yang absen di branch ini
           cp ../susfs/kernel_patches/fs/* fs/
           cp ../susfs/kernel_patches/include/linux/* include/linux/
 
-          echo "--- Menerapkan Patch ke direktori KernelSU-Next ---"
-          cd KernelSU-Next
-          # Menambahkan -f agar auto-patch tanpa nunggu prompt [y/n]
-          patch -p1 -f < ../../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch || true
+          echo "--- Menerapkan Patch ke direktori ReSukiSU ---"
+          # Skrip ReSukiSU tetap menggunakan nama folder 'KernelSU' demi kompatibilitas. Jangan ubah nama folder ini.
+          cd KernelSU
+          patch -p1 < ../../susfs/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch
           cd ..
 
           echo "--- Menerapkan Patch ke Kernel source ---"
-          # Mengubah target folder di dalam isi file patch SUSFS agar sesuai dengan "KernelSU-Next"
-          sed -i 's/KernelSU\//KernelSU-Next\//g' ../susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch || true
-          patch -p1 -f < ../susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch || true
+          # Menyesuaikan nama patch dengan format yang ada di repositori susfs4ksu untuk branch 5.10
+          patch -p1 < ../susfs/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch || echo "Peringatan: Beberapa patch kernel mungkin perlu penyesuaian."
 
-          echo "--- Mengaktifkan konfigurasi KSU Next dan SUSFS di defconfig ---"
+          echo "--- Mengaktifkan konfigurasi ReSukiSU dan SUSFS di defconfig ---"
           cat <<EOF >> arch/arm64/configs/${DEFCONFIG_NAME}
 
-          # Konfigurasi KernelSU Next & SUSFS
+          # Konfigurasi ReSukiSU & SUSFS
           CONFIG_KSU=y
           CONFIG_KSU_SUSFS=y
           CONFIG_KSU_SUSFS_SUS_PATH=y
@@ -197,11 +198,12 @@ jobs:
           echo "Build Date: $(date)" > AnyKernel3/build-info.txt
           echo "Branch: ${KERNEL_BRANCH}" >> AnyKernel3/build-info.txt
           echo "Commit: ${GITHUB_SHA}" >> AnyKernel3/build-info.txt
-          echo "Include: KernelSU Next + SUSFS" >> AnyKernel3/build-info.txt
+          echo "Include: ReSukiSU ${RSKSU_VERSION} + SUSFS" >> AnyKernel3/build-info.txt
 
       - name: Create Flashable ZIP
         run: |
-          ZIP_NAME="Marble-Kernel-KSUNext-SUSFS-${GITHUB_RUN_NUMBER}.zip"
+          # Mengubah nama rilis zip dari KSU ke ReSukiSU
+          ZIP_NAME="Marble-Kernel-ReSukiSU-SUSFS-${GITHUB_RUN_NUMBER}.zip"
 
           cd AnyKernel3
 
@@ -212,13 +214,15 @@ jobs:
       - name: Upload ZIP Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Marble-Kernel-Ronin-KSUNext-SUSFS
+          # Mengubah nama artifact
+          name: Marble-Kernel-Ronin-ReSukiSU-SUSFS
           path: ${{ env.ZIP_NAME }}
 
       - name: Create Release Tag
         if: github.event_name == 'workflow_dispatch'
         run: |
-          TAG="build-${GITHUB_RUN_NUMBER}-KSUNext"
+          # Mengubah nama Tag rilis
+          TAG="build-${GITHUB_RUN_NUMBER}-ReSukiSU"
           echo "TAG_NAME=${TAG}" >> $GITHUB_ENV
 
       - name: Create GitHub Release
@@ -226,7 +230,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          name: Marble Kernel Ronin KSU-Next+SUSFS ${{ github.run_number }}
+          # Mengubah judul rilis di GitHub
+          name: Marble Kernel Ronin ReSukiSU+SUSFS ${{ github.run_number }}
           files: ${{ env.ZIP_NAME }}
           generate_release_notes: true
           
