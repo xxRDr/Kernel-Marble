@@ -1,4 +1,4 @@
-name: Marble Kernel Ronin
+name: Melt Kernel Ronin
 
 on:
   workflow_dispatch:
@@ -197,7 +197,7 @@ jobs:
 
       - name: Create Flashable ZIP
         run: |
-          ZIP_NAME="Marble-Kernel-ReSukiSU-SUSFS-${GITHUB_RUN_NUMBER}.zip"
+          ZIP_NAME="Melt-Kernel-ReSukiSU-SUSFS-${GITHUB_RUN_NUMBER}.zip"
 
           cd AnyKernel3
 
@@ -208,7 +208,7 @@ jobs:
       - name: Upload ZIP Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Marble-Kernel-Ronin-ReSukiSU-SUSFS
+          name: Melt-Kernel-Ronin-ReSukiSU-SUSFS
           path: ${{ env.ZIP_NAME }}
 
       - name: Create Release Tag
@@ -222,7 +222,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          name: Marble Kernel Ronin ReSukiSU+SUSFS ${{ github.run_number }}
+          name: Melt Kernel Ronin ReSukiSU+SUSFS ${{ github.run_number }}
           files: ${{ env.ZIP_NAME }}
           generate_release_notes: true
           
