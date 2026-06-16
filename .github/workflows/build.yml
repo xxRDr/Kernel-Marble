@@ -12,7 +12,8 @@ permissions:
 env:
   KERNEL_REPO: https://github.com/Pzqqt/android_kernel_xiaomi_marble.git
   KERNEL_BRANCH: melt-rebase
-  AK3_REPO: https://github.com/Pzqqt/AnyKernel3/tree/Marble-Melt
+  AK3_REPO: https://github.com/Pzqqt/AnyKernel3.git
+  AK3_BRANCH: Marble-Melt
   RESUKISU_BRANCH: main
   SUSFS_BRANCH: gki-android12-5.10 # Ganti ke gki-android13-5.15 jika kernel Anda menggunakan versi 5.15
 
