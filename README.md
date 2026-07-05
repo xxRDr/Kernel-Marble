@@ -12,8 +12,9 @@
 [![ROM](https://img.shields.io/badge/ROM-Stock_HyperOS_Only-FF6900)](https://www.mi.com/global/hyperos/)
 
 </div>
+<div align="center">
 
-##  ✧ Credits ✧
+#  ✧ Credits ✧
 
 - **Pzqqt** — upstream Marble kernel source and maintenance
 - **osm0sis** — AnyKernel3 flashing framework
