@@ -87,6 +87,7 @@ jobs:
       TOOLCHAIN: ${{ inputs.toolchain }}
       ANDROID_CLANG_BIN: ${{ github.workspace }}/android-clang/clang-r416183b/bin
       LLVM_22_1_8_BIN: ${{ github.workspace }}/llvm-22.1.8/bin
+      CLANG19_PGO_BIN: ${{ github.workspace }}/clang-19-pgo/bin
 
     steps:
       - name: Checkout builder
