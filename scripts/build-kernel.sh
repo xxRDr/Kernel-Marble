@@ -7,8 +7,16 @@ KERNEL_DIR="${KERNEL_DIR:-kernel-source}"
 BUILD_SCOPE="${BUILD_SCOPE:-image-only}"
 MANAGER="${MANAGER:-none}"
 ENABLE_SUSFS="${ENABLE_SUSFS:-false}"
-JOBS="${JOBS:-$(nproc)}"
 USE_CCACHE="${USE_CCACHE:-true}"
+
+DEFAULT_JOBS=4
+if command -v nproc >/dev/null 2>&1; then
+    CPU_COUNT="$(nproc)"
+else
+    CPU_COUNT="$DEFAULT_JOBS"
+fi
+(( CPU_COUNT > DEFAULT_JOBS )) && CPU_COUNT=$DEFAULT_JOBS
+JOBS="${JOBS:-$CPU_COUNT}"
 
 pushd "${KERNEL_DIR}" >/dev/null
 mkdir -p "${OUT_DIR}" "${RELEASE_DIR}"
@@ -64,7 +72,12 @@ if [[ "${BUILD_SCOPE}" == "full" ]]; then
   targets+=(modules dtbs)
 fi
 
-make -j"${JOBS}" O="${OUT_DIR}" ARCH="${ARCH}" LLVM=1 LLVM_IAS=1 CC="${CC}" "${targets[@]}" 2>&1 | tee -a "${RELEASE_DIR}/build.log"
+make -j"${JOBS}" -l4 \
+  O="${OUT_DIR}" \
+  ARCH="${ARCH}" \
+  LLVM=1 LLVM_IAS=1 \
+  CC="${CC}" \
+  "${targets[@]}" 2>&1 | tee -a "${RELEASE_DIR}/build.log"
 
 image_path="${OUT_DIR}/arch/arm64/boot/Image"
 if [[ ! -s "${image_path}" ]]; then
